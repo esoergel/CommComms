@@ -2,11 +2,12 @@ import requests
 import threading
 import time
 
+SERVER = "http://127.0.0.1:5000"
 
 def login():
     username = raw_input("What is your username?")
     return username, "guest"
-    # print requests.post('http://127.0.0.1:5000/login/', data={'username': username}).text
+    # print requests.post(SERVER + '/login/', data={'username': username}).text
 
 
 def logout(username):
@@ -17,7 +18,7 @@ def send(raw, auth):
     recipient, message= raw.split(':')
     data = {'message': message,
             'recipient': recipient}
-    requests.post('http://127.0.0.1:5000/msg/',
+    requests.post(SERVER+'/msg/',
                         data=data, auth=auth).text
 
 
@@ -27,7 +28,7 @@ class NewMessagePoller(threading.Thread):
         super(NewMessagePoller, self).__init__(*args, **kwargs)
 
     def run(self):
-        response = requests.get('http://127.0.0.1:5000/poll/',
+        response = requests.get(SERVER+'/poll/',
                                 stream=True, auth=self.auth)
         for line in response.iter_lines(chunk_size=1):
             print "New message!:", line
