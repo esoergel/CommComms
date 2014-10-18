@@ -3,35 +3,45 @@ import threading
 import time
 
 
-def login(username):
-    print requests.post('http://127.0.0.1:5000/login/', data={'username': username}).text
+def login():
+    username = raw_input("What is your username?")
+    return username, "guest"
+    # print requests.post('http://127.0.0.1:5000/login/', data={'username': username}).text
 
 
 def logout(username):
     print "user %s is logged out" % username
 
 
-def send(message):
-    data = {'message': "Hi there!",
-            'recipient': "Nick"}
-    print requests.post('http://127.0.0.1:5000/msg/',
-                        data=data).text
+def send(raw, auth):
+    recipient, message= raw.split(':')
+    data = {'message': message,
+            'recipient': recipient}
+    requests.post('http://127.0.0.1:5000/msg/',
+                        data=data, auth=auth).text
 
 
 class NewMessagePoller(threading.Thread):
+    def __init__(self, auth, *args, **kwargs):
+        self.auth = auth
+        super(NewMessagePoller, self).__init__(*args, **kwargs)
+
     def run(self):
-        print "Polling server..."
-        response = requests.get('http://127.0.0.1:5000/poll/', stream=True)
+        response = requests.get('http://127.0.0.1:5000/poll/',
+                                stream=True, auth=self.auth)
         for line in response.iter_lines(chunk_size=1):
-            print "Nick:", line
+            print "New message!:", line
 
 
-def receive(message):
-    print "received message:\n%s" % message
+def prompt(auth):
+    while True:
+        message = raw_input()
+        send(message, auth)
 
 
 if __name__ == '__main__':
-    login('esoergel')
-    poller = NewMessagePoller()
+    auth = login()
+    poller = NewMessagePoller(auth)
     poller.start()
-    logout('esoergel')
+    prompt(auth)
+    logout('esoergel', auth)
